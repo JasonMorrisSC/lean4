@@ -318,7 +318,7 @@ Syntactic sugar is provided for writing structured proof terms:
 
 * ``have h : p := s; t`` is sugar for ``(fun h : p => t) s``
 * ``suffices h : p from s; t`` is sugar for ``(λ h : p => s) t``
-* ``suffices h : p by s; t`` is sugar for ``(suffixes h : p from by s; t)``
+* ``suffices h : p by s; t`` is sugar for ``(suffices h : p from by s; t)``
 * ``show p from t`` is sugar for ``(have this : p := t; this)``
 * ``show p by tac`` is sugar for ``(show p from by tac)``
 
