@@ -198,7 +198,7 @@ data type constructors. Definitions can also be found the
 [Data](https://github.com/leanprover/lean4/blob/master/src/Init/Data)
 directory of the core library. For more information, see also [Chapter libraries](./libraries.md).
 
-```
+```lean
 /- numbers -/
 def f1 (a b c : Nat) : Nat :=
   a^2 + b^2 + c^2
@@ -258,7 +258,6 @@ end
 
 def unbounded (f : Nat → Nat) : Prop := ∀ M, ∃ n, f n ≥ M
 ```
-.. _constructors_projections_and_matching:
 
 Constructors, Projections, and Matching
 =======================================
@@ -273,43 +272,43 @@ The anonymous projector notation can used more generally for any objects defined
 
 Finally, for data types with one constructor, one destruct an element by pattern matching using the ``let`` and ``assume`` constructs, as in the examples below. Internally, these are interpreted using the ``match`` construct, which is in turn compiled down for the eliminator for the inductive type, as described in [Declarations](declarations.md).
 
-.. code-block:: lean
+```lean
+universes u v
+variables {α : Type u} {β : Type v}
 
-    universes u v
-    variables {α : Type u} {β : Type v}
+def p : Nat × ℤ := ⟨1, 2⟩
+#check p.fst
+#check p.snd
 
-    def p : Nat × ℤ := ⟨1, 2⟩
-    #check p.fst
-    #check p.snd
+def p' : Nat × ℤ × bool := ⟨1, 2, tt⟩
+#check p'.fst
+#check p'.snd.fst
+#check p'.snd.snd
 
-    def p' : Nat × ℤ × bool := ⟨1, 2, tt⟩
-    #check p'.fst
-    #check p'.snd.fst
-    #check p'.snd.snd
+def swap_pair (p : α × β) : β × α :=
+⟨p.snd, p.fst⟩
 
-    def swap_pair (p : α × β) : β × α :=
-    ⟨p.snd, p.fst⟩
+theorem swap_conj {a b : Prop} (h : a ∧ b) : b ∧ a :=
+⟨h.right, h.left⟩
 
-    theorem swap_conj {a b : Prop} (h : a ∧ b) : b ∧ a :=
-    ⟨h.right, h.left⟩
+#check [1, 2, 3].append [2, 3, 4]
+#check [1, 2, 3].map (λ x, x^2)
 
-    #check [1, 2, 3].append [2, 3, 4]
-    #check [1, 2, 3].map (λ x, x^2)
+example (p q : Prop) : p ∧ q → q ∧ p :=
+λ h, ⟨h.right, h.left⟩
 
-    example (p q : Prop) : p ∧ q → q ∧ p :=
-    λ h, ⟨h.right, h.left⟩
+def swap_pair' (p : α × β) : β × α :=
+let (x, y) := p in (y, x)
 
-    def swap_pair' (p : α × β) : β × α :=
-    let (x, y) := p in (y, x)
+theorem swap_conj' {a b : Prop} (h : a ∧ b) : b ∧ a :=
+let ⟨ha, hb⟩ := h in ⟨hb, ha⟩
 
-    theorem swap_conj' {a b : Prop} (h : a ∧ b) : b ∧ a :=
-    let ⟨ha, hb⟩ := h in ⟨hb, ha⟩
+def swap_pair'' : α × β → β × α :=
+λ ⟨x, y⟩, (y, x)
 
-    def swap_pair'' : α × β → β × α :=
-    λ ⟨x, y⟩, (y, x)
-
-    theorem swap_conj'' {a b : Prop} : a ∧ b → b ∧ a :=
-    assume ⟨ha, hb⟩, ⟨hb, ha⟩
+theorem swap_conj'' {a b : Prop} : a ∧ b → b ∧ a :=
+assume ⟨ha, hb⟩, ⟨hb, ha⟩
+```
 
 Structured Proofs
 =================
@@ -318,7 +317,7 @@ Syntactic sugar is provided for writing structured proof terms:
 
 * ``have h : p := s; t`` is sugar for ``(fun h : p => t) s``
 * ``suffices h : p from s; t`` is sugar for ``(λ h : p => s) t``
-* ``suffices h : p by s; t`` is sugar for ``(suffixes h : p from by s; t)``
+* ``suffices h : p by s; t`` is sugar for ``(suffices h : p from by s; t)``
 * ``show p from t`` is sugar for ``(have this : p := t; this)``
 * ``show p by tac`` is sugar for ``(show p from by tac)``
 
@@ -333,25 +332,25 @@ therefore be used to apply hypotheses in the local context.
 As noted in [Constructors, Projections and Matching](#constructors_projections_and_matching),
 anonymous constructors and projections and match syntax can be used in proofs just as in expressions that denote data.
 
-.. code-block:: lean
+```lean
+example (p q r : Prop) : p → (q ∧ r) → p ∧ q :=
+assume h₁ : p,
+assume h₂ : q ∧ r,
+have h₃ : q, from and.left h₂,
+show p ∧ q, from and.intro h₁ h₃
 
-    example (p q r : Prop) : p → (q ∧ r) → p ∧ q :=
-    assume h₁ : p,
-    assume h₂ : q ∧ r,
-    have h₃ : q, from and.left h₂,
-    show p ∧ q, from and.intro h₁ h₃
+example (p q r : Prop) : p → (q ∧ r) → p ∧ q :=
+assume : p,
+assume : q ∧ r,
+have q, from and.left this,
+show p ∧ q, from and.intro ‹p› this
 
-    example (p q r : Prop) : p → (q ∧ r) → p ∧ q :=
-    assume : p,
-    assume : q ∧ r,
-    have q, from and.left this,
-    show p ∧ q, from and.intro ‹p› this
-
-    example (p q r : Prop) : p → (q ∧ r) → p ∧ q :=
-    assume h₁ : p,
-    assume h₂ : q ∧ r,
-    suffices h₃ : q, from and.intro h₁ h₃,
-    show q, from and.left h₂
+example (p q r : Prop) : p → (q ∧ r) → p ∧ q :=
+assume h₁ : p,
+assume h₂ : q ∧ r,
+suffices h₃ : q, from and.intro h₁ h₃,
+show q, from and.left h₂
+```
 
 Lean also supports a calculational environment, which is introduced with the keyword ``calc``. The syntax is as follows:
 
